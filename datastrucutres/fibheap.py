@@ -140,7 +140,7 @@ class CircularDLL(object):
             item.left = item.right = None
             self.start = None
 
-class FibHeapHItem(Item):
+class FibHeapItem(Item):
     '''A subclass of the Item base class specifically for Items to go in
     FibHeaps, which have some extra member variables and methods.
     '''
@@ -173,22 +173,26 @@ class FibHeapHItem(Item):
         return t.format(self.key, self.payload, self.marked, self.degree)
 
     def to_DOT(self):
-        label = '{!s} : {!s} ({!s})\n({!s})'.format(
+        label = '{!s} : {!s} ({!s})\\n({!s})'.format(
             self.key, 
-            self.payload.id(), 
-            self.id(), 
-            self.degree)
+            id(self.payload), 
+            self.degree,
+            id(self))
         
         node_t = '  {!s} [label="{!s}"'
-        node_t += self.marked ? ', fillcolor="lightgrey"]\n' : '];\n'
+        if self.marked:
+            node_t += ', fillcolor="lightgrey", style="filled"]\n'
+        else:
+            node_t += '];\n'
         
-        result = node_t.format(self.id(), label)
+        result = node_t.format(id(self), label)
 
         if self.parent:
-            result += '  {!s} -- {!s};\n'.format(self.parent.id(), self.id())
-
-        for c in self.children.items():
-            result += c.to_DOT()
+            result += '  {!s} -- {!s};\n'.format(id(self.parent), id(self))
+        
+        if self.children:
+            for c in self.children.items():
+                result += c.to_DOT()
 
         return result
 
@@ -203,7 +207,7 @@ class FibHeap(object):
             self.n = 1
         else:
             self.roots = CircularDLL()
-            self.n - 0
+            self.n = 0
 
         self.min = init_item # Either None or the single item.
             
@@ -217,7 +221,9 @@ class FibHeap(object):
             return t.format(self.n, self.min, self.roots)
     
     def to_DOT(self, label = None):
-        result = 'graph G {\n  label="{!s}";\n'.format(label)
+        t = 'graph G {{\n  labelloc="{!s}"\n  label="{!s}";\n'
+        result = t.format('top', label)
+
         for i in self.roots.items():
             result += i.to_DOT()
         result += '}'
@@ -239,8 +245,12 @@ class FibHeap(object):
         '''
         self.roots.merge(another.roots)
         self.n += another.n
-        if self.min.key > another.min.key:
-            self.min = another.min
+
+        if (self.min and self.min.key > another.min.key) \
+        or (another.min and not self.min):
+                self.min = another.min
+        # Otherwise either both empty or another is.
+        # Keep current `min` either way.
     
     def first(self):
         '''Return the first item (i.e. the item with the minimum key), without 
@@ -377,16 +387,39 @@ class FibHeap(object):
 if __name__ == '__main__':
     '''Some basic usage examples:
     '''
+    '''
+    print('CircularDLL:')
     # Make an empty instance of the CircularDLL.
-    mylist = CircularDLL()
-    print(mylist)
+    my_list = CircularDLL()
+    print(my_list)
     # Merge it with some anonymous other one.
-    mylist.merge(CircularDLL([Item(1), Item(0, 'hello world')]))
-    print(mylist)
+    my_list.merge(CircularDLL([Item(1), Item(0, 'hello world')]))
+    print(my_list)
     # Insert an item.
-    myitem = Item(42, 'my item')
-    mylist.insert(myitem)
-    print(mylist)
+    my_item = Item(42, 'my item')
+    my_list.insert(my_item)
+    print(my_list)
     # Delete the item before that one.
-    mylist.delete(myitem.left)
-    print(mylist)
+    my_list.delete(my_item.left)
+    print(my_list)
+
+    print('FibHeap:')
+    '''
+    # Make an empty instance of the 
+    my_fibheap = FibHeap()
+    print(my_fibheap.to_DOT('Empty FibHeap'))
+    # Merge it with another one.
+    my_fibheap.merge(FibHeap(FibHeapItem(1, 'first item')))
+    print(my_fibheap.to_DOT('Merge with singleton FibHeap'))
+    my_fibheap.insert(FibHeapItem(2))
+    my_fibheap.insert(FibHeapItem(23))
+    some_item = FibHeapItem(7)
+    my_fibheap.insert(some_item)
+    my_fibheap.insert(FibHeapItem(4))
+    print(my_fibheap.to_DOT('Insert some more items'))
+    my_fibheap.extract_min()
+    print(my_fibheap.to_DOT('After extract_min()'))
+    my_fibheap.delete(some_item)
+    print(my_fibheap.to_DOT('After deleting an item'))
+    
+    
