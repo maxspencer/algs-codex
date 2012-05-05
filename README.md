@@ -10,7 +10,7 @@ Just a collection of the datastructures and algorithms lectured in my second yea
 * Prim's and Kruskal's Algorithms *
 * Dijkstra's Algorithm *
 
-* - Yet to be committed..
+\* - Yet to be committed..
 
 Bugs
 ----
